@@ -78,7 +78,7 @@ class Matrix(list):
     def get_row_number(self, r, c, n):
         return 9 * 9 * r + 9 * c + n
 
-    def set_number_in_constraint(self, r, c, n):
+    def set_number_in_constraint(self, r, c, n, i = 0):
         """
         We can remove one row per set number, as well as 4 columns (one for each type of constraint, that is,
         one for each 1 in the row
@@ -89,15 +89,18 @@ class Matrix(list):
         :param cell:
         :return:
         """
+        fulfilled_constraints = []
         print("\nr{}c{}#{}: ".format(r,c,n+1), end="")
-        rownum = self.get_row_number(r, c, n)
-        print("rownumber: {}, affected columns: ".format(rownum), end="")
+        rownum = self.get_row_number(r, c, n) - i
+        print("rownumber: {}, affected columns: ".format(rownum + i), end="")
         for i in range(len(self[rownum])):
             if self[rownum][i] == 1:
+                fulfilled_constraints.append(i)
                 print("{}, ".format(i%81), end="")
-                for y in range(len(self)):
-                    self[y][i] = -1
-        self[rownum] = [-1] * (4 * 81)
+                # for y in range(len(self)):
+                #    self[y][i] = -1
+        del self[rownum]
+        return fulfilled_constraints
 
     def get_corresponding_constraints(self, r, c, n):
         yield 0 * 81 + r * 9 + c  # cell constraint
@@ -112,9 +115,17 @@ def main(matrix):
     :param matrix:
     :return:
     """
-    m = get_constraint_matrix(matrix)
+    m, fulfilled_constraints = get_constraint_matrix(matrix)
     # m = Matrix()
     A = fill_matrix(m)
+    # TEST
+    h = A[0][-1]
+    for x in set(fulfilled_constraints):
+        c = A[0][x].chead
+        cover_column(c)
+        r = c.down
+        while r != c:
+            r = r.down
     # for row in A:
     #     for cell in row:
     #         print(cell.info())
@@ -123,32 +134,15 @@ def main(matrix):
 
 def get_constraint_matrix(sudoku):
     matrix = Matrix()
+    fulfilled_constraints = []
+    i = 0
     for r in range(len(sudoku)):
         row = sudoku[r]
         for c in range(len(row)):
             n = row[c]
             if n != 0:
-                matrix.set_number_in_constraint(r, c, n - 1)
-    m2 = Matrix(False)
-    emptycolumns = []
-    for i in range(len(matrix)):
-        row = matrix[i]
-        if sum(row) == -324:
-            zahl = i % 9
-            spalte = ((i-zahl)//9)%9
-            reihe = i // 81
-            print("r{}c{}#{}".format(reihe, spalte, zahl+1))
-    for i in range(len(matrix[0])):
-        if sum(row[i] for row in matrix) == -729:
-            emptycolumns.append(i)
-            print(matrix.names[i])
-            m2.names.remove(matrix.names[i])
-    for row in matrix:
-        if sum(row) != -324:
-            m2.append([])
-            for i in range(len(matrix[0])):
-                if i not in emptycolumns:
-                    m2[-1].append(row[i])
+                fulfilled_constraints += matrix.set_number_in_constraint(r, c, n - 1, i)
+                i += 1
     # i = 0
     # while i < len(matrix) - 1:
     #     if sum(matrix[i]) == 0:
@@ -161,12 +155,12 @@ def get_constraint_matrix(sudoku):
     #         for row in matrix:
     #             del row[i]
     #     i += 1
-    return m2
+    return (matrix, fulfilled_constraints)
 
 
 def print_solution():
     print(o)
-    sudoku = [x[:] for x in [[0] * 9] * 9]
+    sudoku = [x[:] for x in [[-1] * 9] * 9]
     for key, val in o.items():
         r, c, v = 0, 0, 0
         # print(val.chead.name, end="")

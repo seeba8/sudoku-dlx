@@ -25,7 +25,7 @@ class Header(Node):
 
 
 class Matrix(list):
-    def __init__(self):
+    def __init__(self, prefill=True):
         # see: http://www.stolaf.edu/people/hansonr/sudoku/exactcovermatrix.htm
         # 81+81+81+81=324 columns:
         # 1) Some number in cell x (only one value)
@@ -49,6 +49,15 @@ class Matrix(list):
         # ...
         # r9c9#8
         # r9c9#9
+        self.names = ["rc{}{}".format(r, c) for r in range(9) for c in range(9)]
+        self.names += ["r{}#{}".format(r, c) for r in range(9) for c in range(9)]
+        self.names += ["c{}#{}".format(r, c) for r in range(9) for c in range(9)]
+        self.names += ["b{}#{}".format(r, c) for r in range(9) for c in range(9)]
+
+        if not prefill:
+            list.__init__(self)
+            return
+
         list.__init__(self, [x[:] for x in [[0] * (81 * 4)] * 9 ** 3])
         # list.__init__(self, [[0] * (81 + 81 + 81 + 81)] * (9 * 9 * 9))
 
@@ -61,13 +70,10 @@ class Matrix(list):
                     for i in self.get_corresponding_constraints(r, c, n):
                         self[y][i] = 1  # block constraint
                         # print(sum(self[y]))
-        # self.names = [str(i) for i in range(9)] * 9 * 4
-        self.names = ["rc{}{}".format(r, c) for r in range(9) for c in range(9)]
-        self.names += ["r{}#{}".format(r, c) for r in range(9) for c in range(9)]
-        self.names += ["c{}#{}".format(r, c) for r in range(9) for c in range(9)]
-        self.names += ["b{}#{}".format(r, c) for r in range(9) for c in range(9)]
-        # input(self.names)
-        # print(self[1])
+                        # self.names = [str(i) for i in range(9)] * 9 * 4
+
+                        # input(self.names)
+                        # print(self[1])
 
     def get_row_number(self, r, c, n):
         return 9 * 9 * r + 9 * c + n
@@ -83,11 +89,15 @@ class Matrix(list):
         :param cell:
         :return:
         """
-        self[self.get_row_number(r, c, n)] = [0] * (4 * 81)
-        for y in range(len(self)):
-            for x in self.get_corresponding_constraints(r, c, n):
-                # print("({},{}".format(x,y))
-                self[y][x] = 0
+        print("\nr{}c{}#{}: ".format(r,c,n+1), end="")
+        rownum = self.get_row_number(r, c, n)
+        print("rownumber: {}, affected columns: ".format(rownum), end="")
+        for i in range(len(self[rownum])):
+            if self[rownum][i] == 1:
+                print("{}, ".format(i%81), end="")
+                for y in range(len(self)):
+                    self[y][i] = -1
+        self[rownum] = [-1] * (4 * 81)
 
     def get_corresponding_constraints(self, r, c, n):
         yield 0 * 81 + r * 9 + c  # cell constraint
@@ -102,8 +112,8 @@ def main(matrix):
     :param matrix:
     :return:
     """
-    # m = get_constraint_matrix(matrix)
-    m = Matrix()
+    m = get_constraint_matrix(matrix)
+    # m = Matrix()
     A = fill_matrix(m)
     # for row in A:
     #     for cell in row:
@@ -119,10 +129,43 @@ def get_constraint_matrix(sudoku):
             n = row[c]
             if n != 0:
                 matrix.set_number_in_constraint(r, c, n - 1)
-    return matrix
+    m2 = Matrix(False)
+    emptycolumns = []
+    for i in range(len(matrix)):
+        row = matrix[i]
+        if sum(row) == -324:
+            zahl = i % 9
+            spalte = ((i-zahl)//9)%9
+            reihe = i // 81
+            print("r{}c{}#{}".format(reihe, spalte, zahl+1))
+    for i in range(len(matrix[0])):
+        if sum(row[i] for row in matrix) == -729:
+            emptycolumns.append(i)
+            print(matrix.names[i])
+            m2.names.remove(matrix.names[i])
+    for row in matrix:
+        if sum(row) != -324:
+            m2.append([])
+            for i in range(len(matrix[0])):
+                if i not in emptycolumns:
+                    m2[-1].append(row[i])
+    # i = 0
+    # while i < len(matrix) - 1:
+    #     if sum(matrix[i]) == 0:
+    #         del matrix[i]
+    #     i += 1
+    # i = 0
+    # while i < len(matrix[0]) - 1:
+    #     if sum(matrix[j][i] for j in range(len(matrix))) == 0:
+    #         print("del constraint")
+    #         for row in matrix:
+    #             del row[i]
+    #     i += 1
+    return m2
 
 
 def print_solution():
+    print(o)
     sudoku = [x[:] for x in [[0] * 9] * 9]
     for key, val in o.items():
         r, c, v = 0, 0, 0
@@ -152,7 +195,7 @@ def print_solution():
         sudoku[r][c] = v
     print("asd")
     print(sudoku)
-
+    assert(False)
 
 def choose_column():
     s = float("inf")
@@ -255,9 +298,9 @@ def fill_matrix(matrix):
 
     for j in range(len(matrix)):
         row = matrix[j]
-        if sum(row) == 0:
+        if all(x == 0 for x in row):
             print("SUMZERO")
-            continue
+            #continue
         left, leftmost = None, None
         A.append([])
         x = A[-1]

@@ -117,24 +117,17 @@ def main(matrix):
     """
     #m, fulfilled_constraints = get_constraint_matrix(matrix)
     m = Matrix()
-    A = fill_matrix(m)
-    # TEST
-    h = A[0][-1]
-    k = 0
     for r in range(len(matrix)):
         row = matrix[r]
         for c in range(len(row)):
             if row[c] != 0:
-                rownum = m.get_row_number(r,c,row[c]-1)
-                #print(A[rownum])
-                cover_column(A[rownum+1][0].chead)
-                right = A[rownum+1][0].right
-                o[k] = right
-                while right != A[rownum+1][0]:
-                    cover_column(right.chead)
-                    right = right.right
+                rownum = m.get_row_number(r, c, row[c] - 1)
+                m.names.append("xxxx")
+                for y in range(len(m)):
+                    m[y].append(1 if y == rownum else 0)
+    A = fill_matrix(m)
+    # TEST
 
-                k += 1
     # for x in set(fulfilled_constraints):
     #     c = A[0][x].chead
     #     cover_column(c)
@@ -142,7 +135,7 @@ def main(matrix):
     # # for row in A:
     #     for cell in row:
     #         print(cell.info())
-    search(k)
+    search(0)
 
 
 def get_constraint_matrix(sudoku):

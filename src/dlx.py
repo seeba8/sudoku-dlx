@@ -91,15 +91,15 @@ class Matrix(list):
         """
         fulfilled_constraints = []
         print("\nr{}c{}#{}: ".format(r,c,n+1), end="")
-        rownum = self.get_row_number(r, c, n) - i
-        print("rownumber: {}, affected columns: ".format(rownum + i), end="")
+        rownum = self.get_row_number(r, c, n) #- i
+        print("rownumber: {}, affected columns: ".format(rownum), end="")
         for i in range(len(self[rownum])):
             if self[rownum][i] == 1:
                 fulfilled_constraints.append(i)
                 print("{}, ".format(i%81), end="")
                 # for y in range(len(self)):
                 #    self[y][i] = -1
-        del self[rownum]
+        #del self[rownum]
         return fulfilled_constraints
 
     def get_corresponding_constraints(self, r, c, n):
@@ -115,21 +115,34 @@ def main(matrix):
     :param matrix:
     :return:
     """
-    m, fulfilled_constraints = get_constraint_matrix(matrix)
-    # m = Matrix()
+    #m, fulfilled_constraints = get_constraint_matrix(matrix)
+    m = Matrix()
     A = fill_matrix(m)
     # TEST
     h = A[0][-1]
-    for x in set(fulfilled_constraints):
-        c = A[0][x].chead
-        cover_column(c)
-        r = c.down
-        while r != c:
-            r = r.down
-    # for row in A:
+    k = 0
+    for r in range(len(matrix)):
+        row = matrix[r]
+        for c in range(len(row)):
+            if row[c] != 0:
+                rownum = m.get_row_number(r,c,row[c]-1)
+                #print(A[rownum])
+                cover_column(A[rownum+1][0].chead)
+                right = A[rownum+1][0].right
+                o[k] = right
+                while right != A[rownum+1][0]:
+                    cover_column(right.chead)
+                    right = right.right
+
+                k += 1
+    # for x in set(fulfilled_constraints):
+    #     c = A[0][x].chead
+    #     cover_column(c)
+    #     print("Get the correct row that fulfills that constraint and cover these columns")
+    # # for row in A:
     #     for cell in row:
     #         print(cell.info())
-    search(0)
+    search(k)
 
 
 def get_constraint_matrix(sudoku):
@@ -159,7 +172,6 @@ def get_constraint_matrix(sudoku):
 
 
 def print_solution():
-    print(o)
     sudoku = [x[:] for x in [[-1] * 9] * 9]
     for key, val in o.items():
         r, c, v = 0, 0, 0
@@ -187,9 +199,7 @@ def print_solution():
                 v = int(right.chead.name[3]) + 1
             right = right.right
         sudoku[r][c] = v
-    print("asd")
     print(sudoku)
-    assert(False)
 
 def choose_column():
     s = float("inf")
